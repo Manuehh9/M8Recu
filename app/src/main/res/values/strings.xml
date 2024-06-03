@@ -1,3 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Recuperacion_ManuelGarcia</string>
+    <string name="nombre_de_la_estacion">Nombre de la estacion</string>
+    <string name="nombre_de_la_direccion">Nombre de la direccion</string>
+    <string name="nombre_de_la_linea">Nombre de la linea</string>
+    <string name="app_name" />
+    <string name="mostrar_lista">Mostrar lista</string>
+    <string name="center_map">Center Map</string>
 </resources>
