@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="line1">#FF0000</color> <!-- Rojo -->
+    <color name="line2">#0000FF</color> <!-- Azul -->
+    <color name="line3">#00FF00</color> <!-- Verde -->
+    <color name="line4">#FFFF00</color> <!-- Amarillo -->
+    <color name="line5">#FF00FF</color> <!-- Magenta -->
+    <color name="line6">#00FFFF</color> <!-- Cian -->
+    <color name="defaultLine">#000000</color> <!-- Negro -->
 </resources>

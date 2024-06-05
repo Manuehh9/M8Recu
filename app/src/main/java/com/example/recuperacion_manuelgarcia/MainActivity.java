@@ -19,11 +19,14 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polyline;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -194,6 +197,8 @@ public class MainActivity extends AppCompatActivity {
         // Limpiar los marcadores actuales
         mapView.getOverlays().clear();
 
+        Map<String, List<GeoPoint>> lineStationsMap = new HashMap<>();
+
         for (Estacion estacion : estaciones) {
             if (selectedLines.isEmpty() || selectedLines.contains(estacion.getProperties().getPicto())) {
                 List<Double> coordinates = estacion.getGeometry().getCoordinates();
@@ -211,10 +216,47 @@ public class MainActivity extends AppCompatActivity {
                         return true;
                     });
                     mapView.getOverlays().add(marker);
+
+                    // Agregar puntos a la lista correspondiente a la línea
+                    String line = estacion.getProperties().getPicto();
+                    if (!lineStationsMap.containsKey(line)) {
+                        lineStationsMap.put(line, new ArrayList<>());
+                    }
+                    lineStationsMap.get(line).add(point);
                 }
             }
         }
 
-        mapView.invalidate(); // Refrescar el mapa para mostrar los nuevos marcadores
+        // Dibujar las polylines para cada línea
+        for (Map.Entry<String, List<GeoPoint>> entry : lineStationsMap.entrySet()) {
+            List<GeoPoint> points = entry.getValue();
+            if (points.size() > 1) {
+                Polyline polyline = new Polyline();
+                polyline.setPoints(points);
+                polyline.getOutlinePaint().setColor(getLineColor(entry.getKey()));
+                mapView.getOverlays().add(polyline);
+            }
+        }
+
+        mapView.invalidate(); // Refrescar el mapa para mostrar los nuevos marcadores y polylines
+    }
+
+    private int getLineColor(String line) {
+        switch (line) {
+            case "L1":
+                return getResources().getColor(R.color.line1);
+            case "L2":
+                return getResources().getColor(R.color.line2);
+            case "L3":
+                return getResources().getColor(R.color.line3);
+            case "L4":
+                return getResources().getColor(R.color.line4);
+            case "L5":
+                return getResources().getColor(R.color.line5);
+            case "L6":
+                return getResources().getColor(R.color.line6);
+            default:
+                return getResources().getColor(R.color.defaultLine);
+        }
     }
 }
