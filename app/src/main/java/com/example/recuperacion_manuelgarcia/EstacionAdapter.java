@@ -35,6 +35,10 @@ public class EstacionAdapter extends RecyclerView.Adapter<EstacionAdapter.ViewHo
         holder.lineasTextView.setText("Líneas: " + estacion.getProperties().getPicto());
     }
 
+    public void setEstaciones(List<Estacion> estaciones) {
+        this.estaciones = estaciones; // Actualizar la lista de estaciones
+        notifyDataSetChanged(); // Notificar al adaptador que los datos han cambiado
+    }
     @Override
     public int getItemCount() {
         return estaciones.size();
