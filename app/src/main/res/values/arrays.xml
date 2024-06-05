@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="seleccionar_lineas">Seleccionar Líneas de Metro</string>
+    <string-array name="lineas_metro">
+        <!--<item>Todas las líneas</item>-->
+        <item>L1</item>
+        <item>L2</item>
+        <item>L3</item>
+        <item>L4</item>
+        <item>L5</item>
+        <item>L6</item>
+        <!-- Agrega más líneas según sea necesario -->
+    </string-array>
+</resources>

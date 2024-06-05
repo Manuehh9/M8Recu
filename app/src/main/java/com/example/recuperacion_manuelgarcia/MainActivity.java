@@ -1,30 +1,29 @@
 package com.example.recuperacion_manuelgarcia;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
-
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
-
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
-
 import android.view.View;
 import android.widget.Button;
-
+import android.widget.TextView;
+import java.util.ArrayList;
 import java.util.List;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -35,6 +34,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     String app_id = "a540cd22";
     String app_key = "950122e24a2e53046771f60b8e093e69";
+    private TextView lineSelectionTextView;
+    private List<String> selectedLines = new ArrayList<>();
+    private List<Estacion> estaciones = new ArrayList<>();
+    private boolean[] checkedLines;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
         Configuration.getInstance().load(getApplicationContext(), getSharedPreferences("osmdroid", MODE_PRIVATE));
 
         setContentView(R.layout.activity_main);
+
+        // Configurar el Toolbar como la barra de acción
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         // Crear el objeto MapView
         mapView = findViewById(R.id.mapView);
@@ -82,6 +89,42 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, EstacionListActivity.class);
                 startActivity(intent);
+            }
+        });
+
+        // Inicializar el TextView para la selección de líneas
+        lineSelectionTextView = findViewById(R.id.lineSelectionTextView);
+
+        // Obtener las líneas de metro del array de recursos
+        String[] lineasMetro = getResources().getStringArray(R.array.lineas_metro);
+        checkedLines = new boolean[lineasMetro.length];
+
+        // Configurar el diálogo para la selección de líneas de metro
+        lineSelectionTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle(R.string.seleccionar_lineas);
+                builder.setMultiChoiceItems(lineasMetro, checkedLines, new DialogInterface.OnMultiChoiceClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                        checkedLines[which] = isChecked;
+                    }
+                });
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        selectedLines.clear();
+                        for (int i = 0; i < checkedLines.length; i++) {
+                            if (checkedLines[i]) {
+                                selectedLines.add(lineasMetro[i]);
+                            }
+                        }
+                        updateMap();
+                    }
+                });
+                builder.setNegativeButton("Cancelar", null);
+                builder.show();
             }
         });
 
@@ -135,37 +178,43 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<GeoJsonResponse> call, Response<GeoJsonResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<Estacion> estaciones = response.body().getFeatures();
-
-                    for (Estacion estacion : estaciones) {
-                        List<Double> coordinates = estacion.getGeometry().getCoordinates();
-                        if (coordinates != null && coordinates.size() >= 2) {
-                            double latitude = coordinates.get(1);
-                            double longitude = coordinates.get(0);
-
-                            GeoPoint point = new GeoPoint(latitude, longitude);
-                            Marker marker = new Marker(mapView);
-                            marker.setPosition(point);
-                            marker.setTitle(estacion.getProperties().getNomEstacio());
-                            marker.setSnippet("Líneas: " + estacion.getProperties().getPicto());
-                            marker.setOnMarkerClickListener((marker1, mapView) -> {
-                                marker1.showInfoWindow();
-                                return true;
-                            });
-                            mapView.getOverlays().add(marker);
-                        }
-                    }
-
-                    mapView.invalidate();
-                } else {
-                    System.err.println("Error en la respuesta: " + response.message());
+                    estaciones = response.body().getFeatures();
+                    updateMap(); // Actualizar el mapa con todas las estaciones obtenidas
                 }
             }
 
             @Override
             public void onFailure(Call<GeoJsonResponse> call, Throwable t) {
-                t.printStackTrace();
+                // Manejar errores en la llamada a la API
             }
         });
+    }
+
+    private void updateMap() {
+        // Limpiar los marcadores actuales
+        mapView.getOverlays().clear();
+
+        for (Estacion estacion : estaciones) {
+            if (selectedLines.isEmpty() || selectedLines.contains(estacion.getProperties().getPicto())) {
+                List<Double> coordinates = estacion.getGeometry().getCoordinates();
+                if (coordinates != null && coordinates.size() >= 2) {
+                    double latitude = coordinates.get(1);
+                    double longitude = coordinates.get(0);
+
+                    GeoPoint point = new GeoPoint(latitude, longitude);
+                    Marker marker = new Marker(mapView);
+                    marker.setPosition(point);
+                    marker.setTitle(estacion.getProperties().getNomEstacio());
+                    marker.setSnippet("Líneas: " + estacion.getProperties().getPicto());
+                    marker.setOnMarkerClickListener((marker1, mapView) -> {
+                        marker1.showInfoWindow();
+                        return true;
+                    });
+                    mapView.getOverlays().add(marker);
+                }
+            }
+        }
+
+        mapView.invalidate(); // Refrescar el mapa para mostrar los nuevos marcadores
     }
 }
