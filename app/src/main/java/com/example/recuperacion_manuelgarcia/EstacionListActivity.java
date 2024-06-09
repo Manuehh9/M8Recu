@@ -1,22 +1,18 @@
 package com.example.recuperacion_manuelgarcia;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
-
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.overlay.Marker;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -25,12 +21,13 @@ public class EstacionListActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private EstacionAdapter estacionAdapter;
     private TextView lineSelectionTextView;
+    private Button backToMapButton;
     private List<String> selectedLines = new ArrayList<>();
     private boolean[] checkedLines;
     private List<Estacion> estaciones = new ArrayList<>();
+    private List<Estacion> filteredEstaciones = new ArrayList<>();
 
-    private List<Estacion> filteredEstaciones = new ArrayList<>(); // Definir filteredEstaciones como una lista de Estacion
-
+    // ID y clave para la API
     String app_id = "a540cd22";
     String app_key = "950122e24a2e53046771f60b8e093e69";
 
@@ -43,9 +40,12 @@ public class EstacionListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         lineSelectionTextView = findViewById(R.id.lineSelectionTextView);
+        backToMapButton = findViewById(R.id.button_back_to_map);
 
         String[] lineasMetro = getResources().getStringArray(R.array.lineas_metro);
         checkedLines = new boolean[lineasMetro.length];
+
+        // Configurar el diálogo de selección de líneas
         lineSelectionTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -74,9 +74,20 @@ public class EstacionListActivity extends AppCompatActivity {
             }
         });
 
+        // Configurar el botón para volver al mapa
+        backToMapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Implementa la lógica para volver al mapa
+                Intent intent = new Intent(EstacionListActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
+
         fetchEstaciones();
     }
 
+    // Método para obtener las estaciones de la API
     private void fetchEstaciones() {
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         Call<GeoJsonResponse> call = apiService.getEstaciones(app_id, app_key);
@@ -105,33 +116,34 @@ public class EstacionListActivity extends AppCompatActivity {
         });
     }
 
+    // Método para actualizar la lista de estaciones
     private void updateEstaciones(List<Estacion> estaciones) {
-        this.estaciones.clear(); // Limpiar la lista actual
-        this.estaciones.addAll(estaciones); // Agregar las nuevas estaciones
-        updateRecyclerView(); // Actualizar el RecyclerView con las nuevas estaciones
+        this.estaciones = estaciones;
+        updateRecyclerView();
     }
 
+    // Método para actualizar el RecyclerView según las líneas seleccionadas
     private void updateRecyclerView() {
-        filteredEstaciones.clear(); // Limpiar la lista de estaciones filtradas
-
-        for (Estacion estacion : estaciones) {
-            if (selectedLines.isEmpty() || selectedLines.contains(estacion.getProperties().getPicto())) {
-                filteredEstaciones.add(estacion); // Agregar la estación si no hay líneas seleccionadas o si la estación pertenece a una línea seleccionada
+        if (selectedLines.isEmpty()) {
+            filteredEstaciones.clear();
+            filteredEstaciones.addAll(estaciones);
+        } else {
+            filteredEstaciones.clear();
+            for (Estacion estacion : estaciones) {
+                for (String line : selectedLines) {
+                    if (estacion.getProperties().getPicto().equalsIgnoreCase(line)) {
+                        filteredEstaciones.add(estacion);
+                        break;
+                    }
+                }
             }
         }
 
-        // Depuración: imprimir el número de estaciones antes y después del filtrado
-        Log.d("EstacionListActivity", "Estaciones antes del filtrado: " + estaciones.size());
-        Log.d("EstacionListActivity", "Estaciones después del filtrado: " + filteredEstaciones.size());
-
         if (estacionAdapter == null) {
-            estacionAdapter = new EstacionAdapter(filteredEstaciones); // Crear el adaptador si es nulo
-            recyclerView.setAdapter(estacionAdapter); // Establecer el adaptador en el RecyclerView
+            estacionAdapter = new EstacionAdapter(this, filteredEstaciones);
+            recyclerView.setAdapter(estacionAdapter);
         } else {
-            estacionAdapter.setEstaciones(filteredEstaciones); // Actualizar los datos del adaptador
-            estacionAdapter.notifyDataSetChanged(); // Notificar al adaptador que los datos han cambiado
+            estacionAdapter.setEstaciones(filteredEstaciones);
         }
     }
-
-
 }
